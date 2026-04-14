@@ -25,4 +25,7 @@ public class ContaAnunciante extends RepresentationModel<ContaAnunciante> {
     @NotBlank(message = "O nome da empresa é obrigatório")
     @Column(nullable = false, unique = true, length = 100)
     private String nomeEmpresa;
+    @OneToMany(mappedBy = "contaAnunciante", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore // Evita loop infinito no Swagger
+    private List<Campanha> campanhas = new ArrayList<>();
 }
