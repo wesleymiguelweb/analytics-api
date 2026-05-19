@@ -23,10 +23,6 @@ public class Campanha extends RepresentationModel<Campanha> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotBlank(message = "O nome da campanha é obrigatório")
-    @Column(nullable = false, length = 150)
-    @Schema(description = "Nome de identificação da campanha", example = "Campanha Dia das Mães - Search")
     private String nomeCampanha;
 
     @NotNull(message = "O canal de origem é obrigatório")
