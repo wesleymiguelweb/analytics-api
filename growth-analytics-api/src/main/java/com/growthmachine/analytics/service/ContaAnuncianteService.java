@@ -15,6 +15,11 @@ public class ContaAnuncianteService {
 
     private final ContaAnuncianteRepository repository;
 
+
+    public Page<ContaAnunciante> buscarPorNome(String nome, Pageable pageable) {
+        return repository.findByNomeEmpresaContainingIgnoreCase(nome, pageable);
+    }
+
     public ContaAnunciante salvar(ContaAnunciante conta) {
         return repository.save(conta);
     }

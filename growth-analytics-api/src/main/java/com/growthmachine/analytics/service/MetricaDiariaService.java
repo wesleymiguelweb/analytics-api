@@ -30,4 +30,8 @@ public class MetricaDiariaService {
     public void deletar(Long id) {
         repository.deleteById(id);
     }
+
+    public Page<com.growthmachine.analytics.model.MetricaDiaria> buscarPorData(java.time.LocalDate data, org.springframework.data.domain.Pageable pageable) {
+        return repository.findByData(data, pageable);
+    }
 }

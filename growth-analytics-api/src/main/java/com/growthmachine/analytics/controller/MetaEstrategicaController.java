@@ -1,8 +1,11 @@
 package com.growthmachine.analytics.controller;
 
+import com.growthmachine.analytics.exception.ErroResposta;
 import com.growthmachine.analytics.model.MetaEstrategica;
 import com.growthmachine.analytics.service.MetaEstrategicaService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,82 +27,73 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/api/metas")
 @RequiredArgsConstructor
-@Tag(name = "Metas Estratégicas", description = "Endpoints para gestão de orçamentos e ROAS das contas")
+@Tag(name = "Metas Estratégicas", description = "Endpoints para definição de orçamento e ROAS alvo por Anunciante")
 public class MetaEstrategicaController {
 
     private final MetaEstrategicaService service;
     private final PagedResourcesAssembler<MetaEstrategica> assembler;
 
     @PostMapping
-    @Operation(
-            summary = "Definir Meta Estratégica",
-            description = "Estabelece os limites financeiros e de performance para uma conta anunciante.\n\n**⚠️ INSTRUÇÕES DE USO:**\n* A relação no banco é de 1 para 1 (`@OneToOne`). Cada conta só pode ter **UMA** meta ativa.\n* **NÃO** envie o campo `id` na raiz do JSON (ele é gerado automaticamente).\n* É **obrigatório** vincular a meta a uma Conta Anunciante existente enviando: `\"contaAnunciante\": { \"id\": X }` no corpo da requisição."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Meta criada com sucesso. Retorna os dados da meta e os links de navegação."),
-            @ApiResponse(responseCode = "400", description = "Erro de validação. Ocorre se enviar orçamento/ROAS negativos ou esquecer campos obrigatórios."),
-            @ApiResponse(responseCode = "500", description = "Erro de Integridade. Ocorre se o ID da Conta não existir ou se a Conta já possuir uma meta vinculada (violação da regra 1 para 1).")
+    @Operation(summary = "Criar nova Meta", description = "Define o orçamento mensal e o ROAS alvo para uma Conta Anunciante.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Meta criada com sucesso.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = MetaEstrategica.class))),
+            @ApiResponse(responseCode = "400", description = "Erro de validação (Ex: orçamento negativo ou falta de conta vinculada).",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroResposta.class)))
     })
     public ResponseEntity<EntityModel<MetaEstrategica>> criar(@Valid @RequestBody MetaEstrategica meta) {
-        MetaEstrategica novaMeta = service.salvar(meta);
-        return ResponseEntity.status(HttpStatus.CREATED).body(adicionarLinksHateoas(novaMeta));
+        MetaEstrategica nova = service.salvar(meta);
+        return ResponseEntity.status(HttpStatus.CREATED).body(adicionarLinks(nova));
     }
 
     @GetMapping
-    @Operation(
-            summary = "Listar todas as Metas",
-            description = "Retorna uma lista com todas as metas cadastradas no sistema. \n\n**Paginação:** Esta rota é paginada. Você pode controlar o retorno usando os parâmetros `page` (página desejada, começando em 0) e `size` (quantidade por página) na URL."
-    )
-    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso. Retorna a lista envelopada com metadados de paginação.")
-    public ResponseEntity<PagedModel<EntityModel<MetaEstrategica>>> listarTodos(@PageableDefault(size = 10) Pageable pageable) {
-        Page<MetaEstrategica> metas = service.listarTodos(pageable);
-        return ResponseEntity.ok(assembler.toModel(metas, this::adicionarLinksHateoas));
+    @Operation(summary = "Listar todas as Metas", description = "Retorna uma lista paginada com as diretrizes estratégicas ativas.")
+    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso.")
+    public ResponseEntity<PagedModel<EntityModel<MetaEstrategica>>> listar(@PageableDefault(size = 10) Pageable pageable) {
+        Page<MetaEstrategica> pagina = service.listarTodos(pageable);
+        return ResponseEntity.ok(assembler.toModel(pagina, this::adicionarLinks));
     }
 
     @GetMapping("/{id}")
-    @Operation(
-            summary = "Buscar Meta por ID",
-            description = "Recupera os detalhes de uma meta estratégica específica baseada no ID informado na URL."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meta encontrada com sucesso."),
-            @ApiResponse(responseCode = "404", description = "A meta solicitada não existe no banco de dados.")
+    @Operation(summary = "Buscar Meta por ID", description = "Recupera os detalhes de uma meta estratégica específica.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Meta encontrada.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = MetaEstrategica.class))),
+            @ApiResponse(responseCode = "404", description = "Meta não encontrada no banco de dados.",
+                    content = @Content(schema = @Schema(hidden = true)))
     })
-    public ResponseEntity<EntityModel<MetaEstrategica>> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<EntityModel<MetaEstrategica>> buscar(@PathVariable Long id) {
         return service.buscarPorId(id)
-                .map(m -> ResponseEntity.ok(adicionarLinksHateoas(m)))
+                .map(m -> ResponseEntity.ok(adicionarLinks(m)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    @Operation(
-            summary = "Atualizar Meta Existente",
-            description = "Sobrescreve os valores de uma meta existente. \n\n**Nota:** O ID passado na URL deve ser de uma meta existente. O corpo (JSON) deve conter os novos dados de orçamento e ROAS."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meta atualizada com sucesso."),
-            @ApiResponse(responseCode = "400", description = "Erro de validação nos novos dados enviados."),
-            @ApiResponse(responseCode = "404", description = "A meta informada para atualização não foi encontrada.")
+    @Operation(summary = "Atualizar Meta Estratégica", description = "Altera os valores de orçamento ou ROAS alvo de uma meta existente.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Meta atualizada com sucesso.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = MetaEstrategica.class))),
+            @ApiResponse(responseCode = "400", description = "Erro de validação nos novos dados enviados.",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroResposta.class))),
+            @ApiResponse(responseCode = "404", description = "Meta não encontrada para atualização.",
+                    content = @Content(schema = @Schema(hidden = true)))
     })
-    public ResponseEntity<EntityModel<MetaEstrategica>> atualizar(@PathVariable Long id, @Valid @RequestBody MetaEstrategica metaAtualizada) {
-        return service.buscarPorId(id).map(metaExistente -> {
-            metaExistente.setOrcamentoMensal(metaAtualizada.getOrcamentoMensal());
-            metaExistente.setRoasAlvo(metaAtualizada.getRoasAlvo());
-            metaExistente.setContaAnunciante(metaAtualizada.getContaAnunciante());
+    public ResponseEntity<EntityModel<MetaEstrategica>> atualizar(@PathVariable Long id, @Valid @RequestBody MetaEstrategica atualizada) {
+        return service.buscarPorId(id).map(existente -> {
+            existente.setOrcamentoMensal(atualizada.getOrcamentoMensal());
+            existente.setRoasAlvo(atualizada.getRoasAlvo());
+            existente.setContaAnunciante(atualizada.getContaAnunciante());
 
-            MetaEstrategica salva = service.salvar(metaExistente);
-            return ResponseEntity.ok(adicionarLinksHateoas(salva));
+            MetaEstrategica salva = service.salvar(existente);
+            return ResponseEntity.ok(adicionarLinks(salva));
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    @Operation(
-            summary = "Deletar Meta",
-            description = "Remove uma meta estratégica do sistema. \n\n**Atenção:** Esta ação apaga apenas a meta, não afeta a Conta Anunciante vinculada a ela."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Meta deletada com sucesso (No Content)."),
-            @ApiResponse(responseCode = "404", description = "A meta informada não foi encontrada para exclusão.")
+    @Operation(summary = "Excluir Meta", description = "Remove uma meta estratégica do sistema.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Exclusão efetuada com sucesso."),
+            @ApiResponse(responseCode = "404", description = "Meta não encontrada.")
     })
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         if (service.buscarPorId(id).isPresent()) {
@@ -109,12 +103,22 @@ public class MetaEstrategicaController {
         return ResponseEntity.notFound().build();
     }
 
-    private EntityModel<MetaEstrategica> adicionarLinksHateoas(MetaEstrategica meta) {
-        return EntityModel.of(meta,
-                linkTo(methodOn(MetaEstrategicaController.class).buscarPorId(meta.getId())).withSelfRel(),
-                linkTo(methodOn(MetaEstrategicaController.class).listarTodos(Pageable.unpaged())).withRel("todas_metas"),
-                linkTo(methodOn(MetaEstrategicaController.class).atualizar(meta.getId(), meta)).withRel("update"),
-                linkTo(methodOn(MetaEstrategicaController.class).deletar(meta.getId())).withRel("delete")
+    @GetMapping("/busca-por-roas")
+    @Operation(summary = "Filtrar por ROAS Mínimo", description = "Busca metas que possuam um ROAS alvo maior ou igual ao valor informado.")
+    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso.")
+    public ResponseEntity<PagedModel<EntityModel<MetaEstrategica>>> buscarPorRoasMinimo(
+            @RequestParam Double roas,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<MetaEstrategica> pagina = service.buscarPorRoasMinimo(roas, pageable);
+        return ResponseEntity.ok(assembler.toModel(pagina, this::adicionarLinks));
+    }
+
+    private EntityModel<MetaEstrategica> adicionarLinks(MetaEstrategica m) {
+        return EntityModel.of(m,
+                linkTo(methodOn(MetaEstrategicaController.class).buscar(m.getId())).withSelfRel(),
+                linkTo(methodOn(MetaEstrategicaController.class).listar(Pageable.unpaged())).withRel("lista"),
+                linkTo(methodOn(MetaEstrategicaController.class).atualizar(m.getId(), m)).withRel("update"),
+                linkTo(methodOn(MetaEstrategicaController.class).deletar(m.getId())).withRel("delete")
         );
     }
 }

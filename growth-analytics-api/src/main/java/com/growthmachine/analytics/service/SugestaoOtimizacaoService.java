@@ -29,4 +29,8 @@ public class SugestaoOtimizacaoService {
     public void deletar(Long id) {
         repository.deleteById(id);
     }
+
+    public Page<SugestaoOtimizacao> findByTipoAcao(com.growthmachine.analytics.model.enums.TipoAcao tipoAcao, org.springframework.data.domain.Pageable pageable) {
+        return repository.findByTipoAcao(tipoAcao, pageable);
+    }
 }

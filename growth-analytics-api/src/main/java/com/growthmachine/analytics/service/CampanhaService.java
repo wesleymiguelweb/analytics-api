@@ -30,4 +30,8 @@ public class CampanhaService {
     public void deletar(Long id) {
         repository.deleteById(id);
     }
+
+    public Page<com.growthmachine.analytics.model.Campanha> buscarPorCanal(com.growthmachine.analytics.model.enums.CanalOrigem canal, org.springframework.data.domain.Pageable pageable) {
+        return repository.findByCanalOrigem(canal, pageable);
+    }
 }

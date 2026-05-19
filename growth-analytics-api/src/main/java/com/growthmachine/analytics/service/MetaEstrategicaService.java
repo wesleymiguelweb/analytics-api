@@ -30,4 +30,8 @@ public class MetaEstrategicaService {
     public void deletar(Long id) {
         repository.deleteById(id);
     }
+
+    public Page<com.growthmachine.analytics.model.MetaEstrategica> buscarPorRoasMinimo(Double roas, org.springframework.data.domain.Pageable pageable) {
+        return repository.findByRoasAlvoGreaterThanEqual(roas, pageable);
+    }
 }

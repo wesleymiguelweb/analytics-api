@@ -9,6 +9,7 @@ import java.util.List;
 
 @Repository
 public interface SugestaoOtimizacaoRepository extends JpaRepository<SugestaoOtimizacao, Long> {
-    // Consulta personalizada exigida
+    // Filtra sugestões pelo tipo de ação (ex: buscar apenas as de "AUMENTAR_ORCAMENTO")
+    Page<SugestaoOtimizacao> findByTipoAcao(com.growthmachine.analytics.model.enums.TipoAcao tipoAcao, org.springframework.data.domain.Pageable pageable);
     List<SugestaoOtimizacao> findByTipoAcao(TipoAcao tipoAcao);
 }

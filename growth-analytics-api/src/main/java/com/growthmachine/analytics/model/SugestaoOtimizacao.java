@@ -36,9 +36,10 @@ public class SugestaoOtimizacao extends RepresentationModel<SugestaoOtimizacao> 
 
     @ManyToMany
     @JoinTable(
-            name = "tb_campanha_sugestao",
+            name = "tb_sugestao_campanha",
             joinColumns = @JoinColumn(name = "sugestao_id"),
             inverseJoinColumns = @JoinColumn(name = "campanha_id")
     )
-    private List<Campanha> campanhas;
+    @Schema(description = "Lista de campanhas que recebem esta sugestão")
+    private List<Campanha> campanhas = new ArrayList<>();
 }
