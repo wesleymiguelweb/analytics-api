@@ -31,23 +31,24 @@ public class CampanhaController {
     private final PagedResourcesAssembler<Campanha> assembler;
 
     @PostMapping
-    @Operation(summary = "Criar nova Campanha", description = "Vincula uma campanha a uma conta anunciante")
+    @Operation(
+            summary = "Criar nova Campanha",
+            description = "Cadastra uma nova campanha de tráfego pago associada a uma conta.\n\n**⚠️ INSTRUÇÕES:**\n* O campo `canalOrigem` só aceita valores exatos: `GOOGLE_ADS`, `MERCADO_LIVRE`, `AMAZON_ADS` ou `META_ADS`.\n* É **obrigatório** vincular a campanha a uma Conta Anunciante existente enviando o bloco `contaAnunciante: { \"id\": X }` no corpo do JSON."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Campanha criada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Erro de validação nos dados enviados")
+            @ApiResponse(responseCode = "201", description = "Campanha criada com sucesso."),
+            @ApiResponse(responseCode = "400", description = "Erro de validação. Ocorre se o Enum do canal de origem estiver escrito errado ou faltar o nome da campanha."),
+            @ApiResponse(responseCode = "500", description = "Erro de Integridade. Ocorre se o ID da Conta Anunciante enviada não for encontrado no banco de dados.")
     })
-    public ResponseEntity<EntityModel<Campanha>> criar(@Valid @RequestBody Campanha campanha) {
-        Campanha novaCampanha = service.salvar(campanha);
-        return ResponseEntity.status(HttpStatus.CREATED).body(adicionarLinksHateoas(novaCampanha));
-    }
+    public ResponseEntity<Campanha> criar(@Valid @RequestBody Campanha campanha) { ... }
 
     @GetMapping
-    @Operation(summary = "Listar todas as campanhas com paginação")
-    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso")
-    public ResponseEntity<PagedModel<EntityModel<Campanha>>> listarTodos(@PageableDefault(size = 10) Pageable pageable) {
-        Page<Campanha> campanhas = service.listarTodos(pageable);
-        return ResponseEntity.ok(assembler.toModel(campanhas, this::adicionarLinksHateoas));
-    }
+    @Operation(
+            summary = "Listar Campanhas",
+            description = "Retorna uma lista de todas as campanhas cadastradas. Suporta paginação passando os parâmetros `page` e `size`."
+    )
+    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso.")
+    public ResponseEntity<Page<Campanha>> listarTodas(Pageable pageable) { ... }
 
     @GetMapping("/{id}")
     @Operation(summary = "Buscar campanha por ID")

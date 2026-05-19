@@ -26,18 +26,20 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @RestController
 @RequestMapping("/api/contas")
 @RequiredArgsConstructor
-@Tag(name = "Contas Anunciantes", description = "Endpoints para gestão das empresas (Anunciantes)")
+@Tag(name = "Contas Anunciantes", description = "Entidade RAIZ do sistema. Endpoints para gestão de empresas e anunciantes.")
 public class ContaAnuncianteController {
 
     private final ContaAnuncianteService service;
-    // Ferramenta injetada para transformar Pages em PagedModel (Requisito HATEOAS)
     private final PagedResourcesAssembler<ContaAnunciante> assembler;
 
     @PostMapping
-    @Operation(summary = "Criar nova Conta Anunciante", description = "Cria uma nova empresa e retorna os dados cadastrados")
+    @Operation(
+            summary = "Criar nova Conta Anunciante",
+            description = "Cadastra uma nova empresa no sistema. Sendo a entidade raiz, não depende de nenhuma outra para ser criada.\n\n**⚠️ INSTRUÇÕES DE USO:**\n* Envie apenas as informações da empresa no JSON, como o `nomeEmpresa`.\n* **NÃO** envie o campo `id` na requisição. O banco de dados gerará a numeração automaticamente."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Conta criada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Erro de validação nos dados enviados")
+            @ApiResponse(responseCode = "201", description = "Conta criada com sucesso. Retorna os dados cadastrados e os links HATEOAS."),
+            @ApiResponse(responseCode = "400", description = "Erro de validação. Ocorre se o nome da empresa for enviado em branco ou fora do formato permitido.")
     })
     public ResponseEntity<EntityModel<ContaAnunciante>> criar(@Valid @RequestBody ContaAnunciante conta) {
         ContaAnunciante novaConta = service.salvar(conta);
@@ -45,21 +47,25 @@ public class ContaAnuncianteController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todas as contas com paginação", description = "Retorna uma lista paginada de contas")
-    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso")
+    @Operation(
+            summary = "Listar todas as Contas",
+            description = "Retorna o diretório completo de empresas anunciantes cadastradas.\n\n**Paginação:** Controle a navegação utilizando os parâmetros `page` (página inicial é 0) e `size` (limite de itens) na URL."
+    )
+    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso. Retorna a lista paginada com links de navegação.")
     public ResponseEntity<PagedModel<EntityModel<ContaAnunciante>>> listarTodos(@PageableDefault(size = 10) Pageable pageable) {
         Page<ContaAnunciante> contas = service.listarTodos(pageable);
-
-        // Transforma o Page normal em um PagedModel do HATEOAS (com links de next/prev page)
         PagedModel<EntityModel<ContaAnunciante>> pagedModel = assembler.toModel(contas, this::adicionarLinksHateoas);
         return ResponseEntity.ok(pagedModel);
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar conta por ID")
+    @Operation(
+            summary = "Buscar Conta por ID",
+            description = "Consulta os dados cadastrais completos de uma empresa específica utilizando o seu ID."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Conta encontrada"),
-            @ApiResponse(responseCode = "404", description = "Conta não encontrada")
+            @ApiResponse(responseCode = "200", description = "Conta encontrada com sucesso."),
+            @ApiResponse(responseCode = "404", description = "O ID informado não corresponde a nenhuma conta no banco de dados.")
     })
     public ResponseEntity<EntityModel<ContaAnunciante>> buscarPorId(@PathVariable Long id) {
         Optional<ContaAnunciante> conta = service.buscarPorId(id);
@@ -68,11 +74,14 @@ public class ContaAnuncianteController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar uma conta existente")
+    @Operation(
+            summary = "Atualizar Conta Existente",
+            description = "Modifica os dados cadastrais (como alterar o nome da empresa) de uma conta existente."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Conta atualizada com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Conta não encontrada"),
-            @ApiResponse(responseCode = "400", description = "Erro de validação")
+            @ApiResponse(responseCode = "200", description = "Conta atualizada com sucesso."),
+            @ApiResponse(responseCode = "400", description = "Erro de validação nos novos dados enviados."),
+            @ApiResponse(responseCode = "404", description = "O ID informado na URL não foi encontrado para atualização.")
     })
     public ResponseEntity<EntityModel<ContaAnunciante>> atualizar(@PathVariable Long id, @Valid @RequestBody ContaAnunciante contaAtualizada) {
         return service.buscarPorId(id).map(contaExistente -> {
@@ -83,10 +92,14 @@ public class ContaAnuncianteController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Deletar uma conta por ID")
+    @Operation(
+            summary = "Deletar Conta (Perigo)",
+            description = "Exclui uma empresa anunciante do sistema.\n\n**⚠️ ALERTA DE INTEGRIDADE (EFEITO CASCATA):**\nDependendo de como a restrição de chave estrangeira foi configurada no banco de dados, deletar uma Conta pode falhar se ela possuir Campanhas e Metas vinculadas a ela, ou apagará tudo em cascata."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Conta deletada com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Conta não encontrada")
+            @ApiResponse(responseCode = "204", description = "Conta deletada com sucesso (No Content)."),
+            @ApiResponse(responseCode = "404", description = "A conta informada para exclusão não foi encontrada."),
+            @ApiResponse(responseCode = "500", description = "Erro de Integridade. A conta não pode ser apagada pois possui Campanhas ativas vinculadas (Violação de Chave Estrangeira).")
     })
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         if (service.buscarPorId(id).isPresent()) {
@@ -96,7 +109,6 @@ public class ContaAnuncianteController {
         return ResponseEntity.notFound().build();
     }
 
-    // Método que constrói o EntityModel com ALL os links exigidos (self, update, delete)
     private EntityModel<ContaAnunciante> adicionarLinksHateoas(ContaAnunciante conta) {
         return EntityModel.of(conta,
                 linkTo(methodOn(ContaAnuncianteController.class).buscarPorId(conta.getId())).withSelfRel(),

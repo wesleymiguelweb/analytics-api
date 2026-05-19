@@ -31,10 +31,14 @@ public class MetaEstrategicaController {
     private final PagedResourcesAssembler<MetaEstrategica> assembler;
 
     @PostMapping
-    @Operation(summary = "Criar nova Meta Estratégica", description = "Cria metas de orçamento e ROAS")
+    @Operation(
+            summary = "Definir Meta Estratégica",
+            description = "Estabelece os limites financeiros e de performance para uma conta anunciante.\n\n**⚠️ INSTRUÇÕES DE USO:**\n* A relação no banco é de 1 para 1 (`@OneToOne`). Cada conta só pode ter **UMA** meta ativa.\n* **NÃO** envie o campo `id` na raiz do JSON (ele é gerado automaticamente).\n* É **obrigatório** vincular a meta a uma Conta Anunciante existente enviando: `\"contaAnunciante\": { \"id\": X }` no corpo da requisição."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Meta criada com sucesso"),
-            @ApiResponse(responseCode = "400", description = "Erro de validação (ex: orçamento negativo)")
+            @ApiResponse(responseCode = "201", description = "Meta criada com sucesso. Retorna os dados da meta e os links de navegação."),
+            @ApiResponse(responseCode = "400", description = "Erro de validação. Ocorre se enviar orçamento/ROAS negativos ou esquecer campos obrigatórios."),
+            @ApiResponse(responseCode = "500", description = "Erro de Integridade. Ocorre se o ID da Conta não existir ou se a Conta já possuir uma meta vinculada (violação da regra 1 para 1).")
     })
     public ResponseEntity<EntityModel<MetaEstrategica>> criar(@Valid @RequestBody MetaEstrategica meta) {
         MetaEstrategica novaMeta = service.salvar(meta);
@@ -42,18 +46,24 @@ public class MetaEstrategicaController {
     }
 
     @GetMapping
-    @Operation(summary = "Listar todas as metas com paginação")
-    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso")
+    @Operation(
+            summary = "Listar todas as Metas",
+            description = "Retorna uma lista com todas as metas cadastradas no sistema. \n\n**Paginação:** Esta rota é paginada. Você pode controlar o retorno usando os parâmetros `page` (página desejada, começando em 0) e `size` (quantidade por página) na URL."
+    )
+    @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso. Retorna a lista envelopada com metadados de paginação.")
     public ResponseEntity<PagedModel<EntityModel<MetaEstrategica>>> listarTodos(@PageableDefault(size = 10) Pageable pageable) {
         Page<MetaEstrategica> metas = service.listarTodos(pageable);
         return ResponseEntity.ok(assembler.toModel(metas, this::adicionarLinksHateoas));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Buscar meta por ID")
+    @Operation(
+            summary = "Buscar Meta por ID",
+            description = "Recupera os detalhes de uma meta estratégica específica baseada no ID informado na URL."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meta encontrada"),
-            @ApiResponse(responseCode = "404", description = "Meta não encontrada")
+            @ApiResponse(responseCode = "200", description = "Meta encontrada com sucesso."),
+            @ApiResponse(responseCode = "404", description = "A meta solicitada não existe no banco de dados.")
     })
     public ResponseEntity<EntityModel<MetaEstrategica>> buscarPorId(@PathVariable Long id) {
         return service.buscarPorId(id)
@@ -62,11 +72,14 @@ public class MetaEstrategicaController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Atualizar uma meta existente")
+    @Operation(
+            summary = "Atualizar Meta Existente",
+            description = "Sobrescreve os valores de uma meta existente. \n\n**Nota:** O ID passado na URL deve ser de uma meta existente. O corpo (JSON) deve conter os novos dados de orçamento e ROAS."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Meta atualizada"),
-            @ApiResponse(responseCode = "404", description = "Meta não encontrada"),
-            @ApiResponse(responseCode = "400", description = "Erro de validação")
+            @ApiResponse(responseCode = "200", description = "Meta atualizada com sucesso."),
+            @ApiResponse(responseCode = "400", description = "Erro de validação nos novos dados enviados."),
+            @ApiResponse(responseCode = "404", description = "A meta informada para atualização não foi encontrada.")
     })
     public ResponseEntity<EntityModel<MetaEstrategica>> atualizar(@PathVariable Long id, @Valid @RequestBody MetaEstrategica metaAtualizada) {
         return service.buscarPorId(id).map(metaExistente -> {
@@ -80,10 +93,13 @@ public class MetaEstrategicaController {
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "Deletar uma meta por ID")
+    @Operation(
+            summary = "Deletar Meta",
+            description = "Remove uma meta estratégica do sistema. \n\n**Atenção:** Esta ação apaga apenas a meta, não afeta a Conta Anunciante vinculada a ela."
+    )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Meta deletada com sucesso"),
-            @ApiResponse(responseCode = "404", description = "Meta não encontrada")
+            @ApiResponse(responseCode = "204", description = "Meta deletada com sucesso (No Content)."),
+            @ApiResponse(responseCode = "404", description = "A meta informada não foi encontrada para exclusão.")
     })
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         if (service.buscarPorId(id).isPresent()) {
