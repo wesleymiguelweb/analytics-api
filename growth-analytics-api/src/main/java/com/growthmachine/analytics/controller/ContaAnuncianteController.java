@@ -38,8 +38,9 @@ public class ContaAnuncianteController {
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Conta criada com sucesso.",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ContaAnunciante.class))),
-            @ApiResponse(responseCode = "400", description = "Erro de validação (Ex: nome da empresa não informado).",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErroResposta.class)))
+            @ApiResponse(responseCode = "400", description = "Erro de validação.",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "array", implementation = ErroResposta.class)))
     })
     public ResponseEntity<EntityModel<ContaAnunciante>> criar(@Valid @RequestBody ContaAnunciante conta) {
         ContaAnunciante nova = service.salvar(conta);

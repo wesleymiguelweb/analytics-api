@@ -32,6 +32,6 @@ public class CampanhaService {
     }
 
     public Page<com.growthmachine.analytics.model.Campanha> buscarPorCanal(com.growthmachine.analytics.model.enums.CanalOrigem canal, org.springframework.data.domain.Pageable pageable) {
-        return repository.findByCanalOrigem(canal, pageable);
+        return repository.findByCanalOrigem(canal.name(), pageable);
     }
 }
