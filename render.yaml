@@ -1,0 +1,29 @@
+services:
+  # Serviço do Banco de Dados PostgreSQL
+  - type: psql
+    name: analytics-db
+    plan: free # Usa o plano gratuito do Render
+    # Em um cenário real, você configuraria o tamanho do disco aqui se não fosse free
+    # pvs:
+    #   size: 1 # Tamanho do disco em GB
+
+  # Serviço da sua API Spring Boot
+  - type: web
+    name: analytics-api
+    env: java
+    plan: free # Usa o plano gratuito do Render
+    buildCommand: "./mvnw clean package -DskipTests"
+    startCommand: "java -jar target/analytics-api-0.0.1-SNAPSHOT.jar"
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: analytics-db
+          property: connectionString
+      - key: DB_USER
+        fromDatabase:
+          name: analytics-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: analytics-db
+          property: password
