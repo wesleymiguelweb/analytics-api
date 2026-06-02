@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -20,19 +20,19 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/keys")
 @Validated
+@RequiredArgsConstructor
 @Tag(name = "API Keys", description = "Endpoints para gerenciamento de chaves de API")
 public class ApiKeyController {
 
-    @Autowired
-    private ApiKeyService apiKeyService;
+    private final ApiKeyService apiKeyService;
 
     @PostMapping
     @Operation(
             summary = "Gerar nova chave de API",
-            description = "Cria uma chave de API para um proprietário. Este é o endpoint inicial de uso da API e não exige X-API-Key. Depois de gerar a chave, use o valor retornado no header X-API-Key dos demais endpoints."
+            description = "Cria uma chave de API para um proprietário. Este endpoint não exige X-API-Key. Para facilitar testes e avaliação, a API também aceita a chave fixa analytics-dev-key-2026 nos demais endpoints."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Chave criada com sucesso.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiKey.class), examples = @ExampleObject(value = "{\"apiKey\":\"9f1f7e61-4d2a-4d8e-9a6b-0c1d2e3f4a5b\",\"owner\":\"wesley\"}"))),
+            @ApiResponse(responseCode = "201", description = "Chave criada com sucesso.", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ApiKey.class), examples = @ExampleObject(value = "{\"apiKey\":\"analytics-dev-key-2026\",\"owner\":\"avaliador\"}"))),
             @ApiResponse(responseCode = "400", description = "Owner ausente ou inválido."),
             @ApiResponse(responseCode = "429", description = "Limite de requisições excedido."),
             @ApiResponse(responseCode = "500", description = "Erro inesperado no servidor.")
@@ -46,7 +46,7 @@ public class ApiKeyController {
     @DeleteMapping
     @Operation(
             summary = "Deletar chave de API",
-            description = "Revoga uma chave de API existente. Requer autenticação via X-API-Key válida."
+            description = "Revoga uma chave de API existente. Requer autenticação via X-API-Key válida. A chave fixa analytics-dev-key-2026 é mantida para facilitar testes e não é removida por este endpoint."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Chave excluída com sucesso."),
@@ -56,7 +56,7 @@ public class ApiKeyController {
             @ApiResponse(responseCode = "500", description = "Erro inesperado no servidor.")
     })
     public ResponseEntity<Void> deleteKey(
-            @Parameter(description = "Chave que será revogada.", example = "9f1f7e61-4d2a-4d8e-9a6b-0c1d2e3f4a5b", required = true)
+            @Parameter(description = "Chave que será revogada.", example = "analytics-dev-key-2026", required = true)
             @RequestParam @NotBlank(message = "A chave de API é obrigatória") String key) {
         apiKeyService.deleteKey(key);
         return ResponseEntity.noContent().build();

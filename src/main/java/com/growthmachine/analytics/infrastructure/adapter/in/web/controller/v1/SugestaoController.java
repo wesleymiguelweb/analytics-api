@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
@@ -16,11 +16,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
 
 @RestController("sugestaoControllerV1")
 @RequestMapping(value = "/api/sugestoes-demo", headers = "X-API-Version=1")
+@RequiredArgsConstructor
 @Tag(name = "Sugestões Demo v1", description = "Endpoint demonstrativo de versionamento por header X-API-Version=1")
 public class SugestaoController {
 
-    @Autowired
-    private SugestaoOtimizacaoRepository repository;
+    private final SugestaoOtimizacaoRepository repository;
 
     @GetMapping
     @Operation(summary = "Listar sugestões demo v1", description = "Retorna sugestões no formato da versão 1. Use o header X-API-Version=1.")

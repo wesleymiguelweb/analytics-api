@@ -2,16 +2,20 @@ package com.growthmachine.analytics.application.service;
 
 import com.growthmachine.analytics.domain.model.ApiKey;
 import com.growthmachine.analytics.infrastructure.adapter.out.persistence.repository.ApiKeyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class ApiKeyService {
 
-    @Autowired
-    private ApiKeyRepository repository;
+    private final ApiKeyRepository repository;
+
+    @Value("${analytics.api.fixed-key}")
+    private String fixedKey;
 
     public ApiKey createKey(String owner) {
         String key = UUID.randomUUID().toString();
@@ -20,10 +24,13 @@ public class ApiKeyService {
     }
 
     public boolean isValid(String key) {
-        return repository.findById(key).isPresent();
+        return fixedKey.equals(key) || repository.findById(key).isPresent();
     }
 
     public void deleteKey(String key) {
+        if (fixedKey.equals(key)) {
+            return;
+        }
         repository.deleteById(key);
     }
 }

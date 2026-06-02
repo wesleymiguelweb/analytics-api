@@ -14,6 +14,7 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springdoc.core.customizers.OperationCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,21 +23,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Configuration
 public class OpenApiConfig {
 
+    @Value("${analytics.api.fixed-key}")
+    private String fixedKey;
+
     @Bean
     public OpenAPI customOpenAPI() {
         String description = """
                 API para gestão de marketing de crescimento.
 
                 Como usar:
-                1. Gere uma chave em POST /api/keys?owner=seu-nome.
-                2. Clique em Authorize no Swagger UI e informe a chave no header X-API-Key.
-                3. Em operações POST, envie X-Idempotency-Key quando quiser evitar processamento duplicado.
-                4. Listagens aceitam paginação por page, size e sort.
-                5. Endpoints versionados usam o header X-API-Version. Exemplo: GET /api/plataformas com X-API-Version=1 ou X-API-Version=2.
+                1. Para testes, use a chave fixa %s no header X-API-Key.
+                2. Se preferir, gere uma chave dinamica em POST /api/keys?owner=seu-nome.
+                3. Clique em Authorize no Swagger UI e informe a chave no header X-API-Key.
+                4. Em operações POST, envie X-Idempotency-Key quando quiser evitar processamento duplicado.
+                5. Listagens aceitam paginação por page, size e sort.
+                6. Endpoints versionados usam o header X-API-Version. Exemplo: GET /api/plataformas com X-API-Version=1 ou X-API-Version=2.
 
                 Códigos de status documentados:
                 200 OK para consultas e atualizações bem-sucedidas; 201 Created para criação; 204 No Content para exclusão; 400 Bad Request para validação, corpo inválido ou parâmetro inválido; 401 Unauthorized para X-API-Key ausente ou inválida; 404 Not Found para recurso inexistente; 409 Conflict para conflitos de integridade; 429 Too Many Requests para rate limit excedido; 500 Internal Server Error para erro inesperado.
-                """;
+                """.formatted(fixedKey);
 
         return new OpenAPI()
                 .info(new Info()
@@ -52,7 +57,7 @@ public class OpenApiConfig {
                                         .type(SecurityScheme.Type.APIKEY)
                                         .in(SecurityScheme.In.HEADER)
                                         .name("X-API-Key")
-                                        .description("Chave gerada por POST /api/keys?owner=seu-nome.")));
+                                        .description("Use a chave fixa " + fixedKey + " ou uma chave gerada por POST /api/keys?owner=seu-nome.")));
     }
 
     @Bean
@@ -64,7 +69,7 @@ public class OpenApiConfig {
 
             if (!isCreateApiKey) {
                 operation.addSecurityItem(new SecurityRequirement().addList("apiKey"));
-                addHeader(operation, "X-API-Key", "Chave obrigatória para endpoints protegidos. Gere uma chave em POST /api/keys?owner=seu-nome.", true, "9f1f7e61-4d2a-4d8e-9a6b-0c1d2e3f4a5b");
+                addHeader(operation, "X-API-Key", "Chave obrigatória para endpoints protegidos. Use a chave fixa " + fixedKey + " ou gere uma chave em POST /api/keys?owner=seu-nome.", true, fixedKey);
                 addResponse(operation, "401", "Não autorizado. Header X-API-Key ausente, vazio ou inválido.", errorExample("Acesso negado: Chave de API (X-API-Key) inválida ou ausente.", 401));
             }
 

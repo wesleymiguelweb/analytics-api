@@ -18,7 +18,7 @@ public class ApiKey {
 
     @Id
     @NotBlank(message = "A chave de API é obrigatória")
-    @Schema(description = "Valor da chave que deve ser enviado no header X-API-Key", example = "9f1f7e61-4d2a-4d8e-9a6b-0c1d2e3f4a5b")
+    @Schema(description = "Valor da chave que deve ser enviado no header X-API-Key", example = "analytics-dev-key-2026")
     private String apiKey;
 
     @NotBlank(message = "O proprietário da chave é obrigatório")

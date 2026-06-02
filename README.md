@@ -50,16 +50,22 @@ Dados do H2:
 
 ## Autenticacao
 
-Crie a primeira chave de API:
+Para facilitar testes e avaliacao, a API aceita uma chave fixa:
+
+```http
+X-API-Key: analytics-dev-key-2026
+```
+
+Tambem e possivel criar uma chave dinamica:
 
 ```http
 POST /api/keys?owner=wesley
 ```
 
-Use a chave retornada nos demais endpoints:
+Use a chave retornada ou a chave fixa nos demais endpoints:
 
 ```http
-X-API-Key: chave-gerada
+X-API-Key: analytics-dev-key-2026
 ```
 
 Operacoes `POST` aceitam idempotencia:
