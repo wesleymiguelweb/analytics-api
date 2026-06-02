@@ -38,6 +38,7 @@ public class OpenApiConfig {
                 4. Em operações POST, envie X-Idempotency-Key quando quiser evitar processamento duplicado.
                 5. Listagens aceitam paginação por page, size e sort.
                 6. Endpoints versionados usam o header X-API-Version. Exemplo: GET /api/plataformas com X-API-Version=1 ou X-API-Version=2.
+                7. Para uso prático de Growth, registre métricas em /api/metricas e consulte /api/analytics/campanhas/{campanhaId}/indicadores para transformar dados mensurados em KPIs, diagnóstico e sugestões.
 
                 Códigos de status documentados:
                 200 OK para consultas e atualizações bem-sucedidas; 201 Created para criação; 204 No Content para exclusão; 400 Bad Request para validação, corpo inválido ou parâmetro inválido; 401 Unauthorized para X-API-Key ausente ou inválida; 404 Not Found para recurso inexistente; 409 Conflict para conflitos de integridade; 429 Too Many Requests para rate limit excedido; 500 Internal Server Error para erro inesperado.

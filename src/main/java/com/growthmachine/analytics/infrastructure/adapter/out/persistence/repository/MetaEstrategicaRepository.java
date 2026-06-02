@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Repository
 public interface MetaEstrategicaRepository extends JpaRepository<MetaEstrategica, Long> {
@@ -15,4 +16,6 @@ public interface MetaEstrategicaRepository extends JpaRepository<MetaEstrategica
      * Busca metas estratégicas cujo ROAS alvo seja maior ou igual ao valor especificado, com paginação.
      */
     Page<MetaEstrategica> findByRoasAlvoGreaterThanEqual(BigDecimal roas, Pageable pageable);
+
+    Optional<MetaEstrategica> findByContaAnuncianteId(Long contaAnuncianteId);
 }

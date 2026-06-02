@@ -88,6 +88,42 @@ GET /api/plataformas
 X-API-Version: 2
 ```
 
+## Uso pratico de Growth Analytics
+
+Ao iniciar com H2, a API cria uma massa demo quando o banco esta vazio:
+
+- Conta: `Growth Machine Demo`
+- Campanha: `Demo - Performance Ecommerce`
+- Periodo com metricas: `2026-03-01` a `2026-03-05`
+
+O fluxo principal de mercado e:
+
+1. Criar conta anunciante, meta estrategica, campanha e plataformas.
+2. Registrar metricas mensuradas de campanha em `POST /api/metricas`.
+3. Consultar indicadores consolidados:
+
+```http
+GET /api/analytics/campanhas/1/indicadores?dataInicio=2026-03-01&dataFim=2026-03-31
+X-API-Key: analytics-dev-key-2026
+```
+
+4. Simular uma recomendacao sem salvar:
+
+```http
+GET /api/analytics/campanhas/1/sugestao?dataInicio=2026-03-01&dataFim=2026-03-31
+X-API-Key: analytics-dev-key-2026
+```
+
+5. Gerar e salvar a sugestao no historico:
+
+```http
+POST /api/analytics/campanhas/1/sugestoes?dataInicio=2026-03-01&dataFim=2026-03-31
+X-API-Key: analytics-dev-key-2026
+X-Idempotency-Key: sugestao-campanha-1-marco-2026
+```
+
+Os indicadores calculados incluem CTR, taxa de conversao, CPC, CPA, ticket medio, ROAS, ROAS alvo, margem contra a meta, diagnostico executivo e alertas de decisao.
+
 ## Recursos implementados
 
 - Spring Boot 4.0.6, Java 17, Maven, H2 e Spring Data JPA
@@ -99,6 +135,7 @@ X-API-Version: 2
 - HATEOAS com `EntityModel` e `PagedModel`
 - API Key via `X-API-Key`
 - Idempotencia via `X-Idempotency-Key`
+- Camada analitica para transformar metricas mensuradas em indicadores e sugestoes acionaveis
 - Rate limiting com headers `X-RateLimit-*` e `Retry-After`
 - CORS para origens especificas
 - Tratamento global de erros com `@ControllerAdvice`
